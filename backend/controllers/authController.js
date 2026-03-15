@@ -44,13 +44,13 @@ const registerUser = async (req, res, next) => {
     }
 
     // Send OTP
-    const message = `Your OTP for Student Skill Exchange Platform registration is: ${otp}. It is valid for 10 minutes.`;
+    // const message = `Your OTP for Student Skill Exchange Platform registration is: ${otp}. It is valid for 10 minutes.`;
 
-    await sendOtpEmail({
-      email: user.email,
-      subject: 'Skill Exchange OTP Verification',
-      message,
-    });
+    // await sendOtpEmail({
+    //   email: user.email,
+    //   subject: 'Skill Exchange OTP Verification',
+    //   message,
+    // });
 
     res.status(201).json({
       message: 'OTP sent to email',
