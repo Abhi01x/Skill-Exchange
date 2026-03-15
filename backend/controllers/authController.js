@@ -11,9 +11,10 @@ const registerUser = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    const userExists = await User.findOne({ email });
+    let user = await User.findOne({ email });
 
-    if (userExists) {
+    // Agar user exist karta hai aur verified hai
+    if (user && user.isVerified) {
       res.status(400);
       throw new Error('User already exists');
     }
@@ -22,48 +23,44 @@ const registerUser = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const otpExpire = Date.now() + 10 * 60 * 1000;
 
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      otp,
-      otpExpire,
+    // Agar user exist karta hai but verify nahi hua
+    if (user && !user.isVerified) {
+      user.name = name;
+      user.password = hashedPassword;
+      user.otp = otp;
+      user.otpExpire = otpExpire;
+      await user.save();
+    } else {
+      user = await User.create({
+        name,
+        email,
+        password: hashedPassword,
+        otp,
+        otpExpire,
+        isVerified: false
+      });
+    }
+
+    // Send OTP
+    const message = `Your OTP for Student Skill Exchange Platform registration is: ${otp}. It is valid for 10 minutes.`;
+
+    await sendOtpEmail({
+      email: user.email,
+      subject: 'Skill Exchange OTP Verification',
+      message,
     });
 
-    if (user) {
-      // Send OTP
-      const message = `Your OTP for Student Skill Exchange Platform registration is: ${otp}. It is valid for 10 minutes.`;
-      
-      try {
-        await sendOtpEmail({
-          email: user.email,
-          subject: 'Skill Exchange OTP Verification',
-          message,
-        });
+    res.status(201).json({
+      message: 'OTP sent to email',
+      email: user.email
+    });
 
-        res.status(201).json({
-          message: 'User registered. Please check email for OTP.',
-          userId: user._id,
-        });
-      } catch (err) {
-        console.error(err);
-        user.otp = undefined;
-        user.otpExpire = undefined;
-        await user.save();
-        res.status(500);
-        throw new Error('Email could not be sent');
-      }
-    } else {
-      res.status(400);
-      throw new Error('Invalid user data');
-    }
   } catch (error) {
     next(error);
   }
 };
-
 // @desc    Verify OTP
 // @route   POST /api/auth/verify-otp
 // @access  Public
