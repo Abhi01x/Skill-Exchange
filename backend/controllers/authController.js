@@ -19,12 +19,13 @@ const registerUser = async (req, res, next) => {
       throw new Error('User already exists');
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+   const salt = await bcrypt.genSalt(10);
+const hashedPassword = await bcrypt.hash(password, salt);
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpire = Date.now() + 10 * 60 * 1000;
+const otp = Math.floor(100000 + Math.random() * 900000).toString();
+const otpExpire = Date.now() + 10 * 60 * 1000;
 
+console.log("Generated OTP:", otp); // OTP render logs me dikhega
     // Agar user exist karta hai but verify nahi hua
     if (user && !user.isVerified) {
       user.name = name;
